@@ -1,5 +1,5 @@
 // src/screens/InsightsScreen.js
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -82,7 +82,7 @@ const InsightsScreen = () => {
     );
   };
 
-  const sections = [
+  const sections = useMemo(() => [
     {
       icon: 'happy-outline',
       label: 'Mood',
@@ -140,7 +140,8 @@ const InsightsScreen = () => {
         />
       ),
     },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [selectedMood, selectedSex, selectedSymptoms, selectedDischarge, selectedFlow]);
 
   return (
     <View style={styles.container}>

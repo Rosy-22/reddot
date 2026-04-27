@@ -8,7 +8,7 @@ const SplashScreen = ({ navigation, onComplete }) => {
     const timer = setTimeout(() => {
       if (onComplete) onComplete();
       else if (navigation) navigation.replace('AuthWelcome');
-    }, 2500);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [navigation, onComplete]);
 

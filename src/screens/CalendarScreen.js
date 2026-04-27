@@ -1,5 +1,5 @@
 // src/screens/CalendarScreen.js
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -22,81 +22,77 @@ const MONTH_NAMES = [
 ];
 const DAY_HEADERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+const getFirstDayOfMonth = (month, year) => {
+  const day = new Date(year, month, 1).getDay();
+  return day === 0 ? 6 : day - 1;
+};
+
+const MonthView = memo(({ monthIndex, year, selectedDates, onToggle }) => {
+  const today = new Date();
+  const daysInMonth = getDaysInMonth(monthIndex, year);
+  const firstDay = getFirstDayOfMonth(monthIndex, year);
+  const days = [];
+
+  for (let i = 0; i < firstDay; i++) {
+    days.push(<View key={`e-${i}`} style={styles.dayCell} />);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateKey = `${year}-${monthIndex}-${day}`;
+    const isSelected = selectedDates.includes(dateKey);
+    const todayFlag =
+      monthIndex === today.getMonth() && day === today.getDate() && year === today.getFullYear();
+
+    days.push(
+      <TouchableOpacity
+        key={day}
+        style={[
+          styles.dayCell,
+          isSelected && styles.dayCellSelected,
+          todayFlag && !isSelected && styles.dayCellToday,
+        ]}
+        onPress={() => onToggle(monthIndex, day)}
+        activeOpacity={0.7}
+      >
+        <Text
+          style={[
+            styles.dayText,
+            isSelected && styles.dayTextSelected,
+            todayFlag && !isSelected && styles.dayTextToday,
+          ]}
+        >
+          {day}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={styles.monthContainer}>
+      <Text style={styles.monthTitle}>{MONTH_NAMES[monthIndex]}</Text>
+      <View style={styles.dayHeaders}>
+        {DAY_HEADERS.map((h, i) => (
+          <View key={i} style={styles.dayCell}>
+            <Text style={styles.dayHeaderText}>{h}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={styles.daysGrid}>{days}</View>
+    </View>
+  );
+});
+
 const CalendarScreen = () => {
   const [selectedDates, setSelectedDates] = useState([]);
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
 
-  const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (month, year) => {
-    const day = new Date(year, month, 1).getDay();
-    return day === 0 ? 6 : day - 1;
-  };
-
-  const toggleDate = (month, day) => {
+  const toggleDate = useCallback((month, day) => {
     const dateKey = `${currentYear}-${month}-${day}`;
     setSelectedDates((prev) =>
       prev.includes(dateKey) ? prev.filter((d) => d !== dateKey) : [...prev, dateKey]
     );
-  };
-
-  const isToday = (month, day) => {
-    const t = new Date();
-    return month === t.getMonth() && day === t.getDate() && currentYear === t.getFullYear();
-  };
-
-  const renderMonth = (monthIndex) => {
-    const daysInMonth = getDaysInMonth(monthIndex, currentYear);
-    const firstDay = getFirstDayOfMonth(monthIndex, currentYear);
-    const days = [];
-
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<View key={`e-${i}`} style={styles.dayCell} />);
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${currentYear}-${monthIndex}-${day}`;
-      const isSelected = selectedDates.includes(dateKey);
-      const todayFlag = isToday(monthIndex, day);
-
-      days.push(
-        <TouchableOpacity
-          key={day}
-          style={[
-            styles.dayCell,
-            isSelected && styles.dayCellSelected,
-            todayFlag && !isSelected && styles.dayCellToday,
-          ]}
-          onPress={() => toggleDate(monthIndex, day)}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.dayText,
-              isSelected && styles.dayTextSelected,
-              todayFlag && !isSelected && styles.dayTextToday,
-            ]}
-          >
-            {day}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
-
-    return (
-      <View key={monthIndex} style={styles.monthContainer}>
-        <Text style={styles.monthTitle}>{MONTH_NAMES[monthIndex]}</Text>
-        <View style={styles.dayHeaders}>
-          {DAY_HEADERS.map((h, i) => (
-            <View key={i} style={styles.dayCell}>
-              <Text style={styles.dayHeaderText}>{h}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.daysGrid}>{days}</View>
-      </View>
-    );
-  };
+  }, [currentYear]);
 
   const handleAddPeriod = () => {
     if (selectedDates.length === 0) {
@@ -124,7 +120,15 @@ const CalendarScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {Array.from({ length: 12 }, (_, i) => renderMonth(i))}
+        {Array.from({ length: 12 }, (_, i) => (
+          <MonthView
+            key={i}
+            monthIndex={i}
+            year={currentYear}
+            selectedDates={selectedDates}
+            onToggle={toggleDate}
+          />
+        ))}
       </ScrollView>
 
       {/* Add Period Button */}
